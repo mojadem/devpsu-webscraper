@@ -1,6 +1,9 @@
 import json
 
 
+database_file = "listings.txt"
+
+
 def serialize_listing(listing):
     return json.dumps(listing, sort_keys=True)
 
@@ -13,7 +16,7 @@ def _read_database():
     lines = []
 
     try:
-        with open("listings.txt") as f:
+        with open(database_file) as f:
             for line in f.readlines():
                 lines.append(line.strip())
     except FileNotFoundError:

@@ -34,12 +34,18 @@ def scrape_listings():
 
         email = _decode_email(m.group(1))
 
-        m = re.search(r"wants (.*) for a (.*) \(.*\) ticket.", l)
+        m = re.search(r"wants \$(.*) for a (.*) \(.*\) ticket.", l)
 
         if m is None:
             continue
 
         price = m.group(1)
+        price = price.replace(",", "")  # remove commas in price
+        try:
+            price = float(m.group(1))
+        except ValueError:
+            continue
+
         game = m.group(2)
 
         listing = {"email": email, "game": game, "price": price}
