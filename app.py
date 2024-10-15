@@ -15,11 +15,8 @@ def index():
         return "no data", 500
 
     args = flask.request.args
-    print(args)
 
     listings = filter_listings(listings, args)
-
-    print("here")
 
     res = {"listings": listings}
     return res, 200
