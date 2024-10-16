@@ -1,53 +1,77 @@
-import json
+import sqlite3
 
-
-database_file = "listings.txt"
-
-
-def serialize_listing(listing):
-    return json.dumps(listing, sort_keys=True)
-
-
-def unserialize_line(line):
-    return json.loads(line)
-
-
-def _read_database():
-    lines = []
-
-    try:
-        with open(database_file) as f:
-            for line in f.readlines():
-                lines.append(line.strip())
-    except FileNotFoundError:
-        pass
-
-    return lines
+database_file = "listings.db"
 
 
 def get_saved_listings():
-    saved_lines = _read_database()
-    saved_listings = map(unserialize_line, saved_lines)
-    return saved_listings
+    db = sqlite3.connect(database_file)
+    cursor = db.cursor()
+
+    query = "SELECT * FROM listings;"
+
+    res = cursor.execute(query)
+
+    db.close()
+
+    return res.fetchall()
 
 
 def check_for_unsaved_listings(listings):
-    saved_lines = _read_database()
-    saved_lines = set(saved_lines)
+    db = sqlite3.connect(database_file)
+    cursor = db.cursor()
+
+    query = "SELECT * FROM listings WHERE game = ? AND email = ? AND price = ?"
 
     unsaved_listings = []
 
     for listing in listings:
-        line = serialize_listing(listing)
+        res = cursor.execute(
+            query, (listing["game"], listing["email"], listing["price"])
+        )
 
-        if line not in saved_lines:
-            unsaved_listings.append(line)
+        if res.fetchone() is None:
+            unsaved_listings.append(listing)
 
     return unsaved_listings
 
 
 def overwrite_saved_listings(listings):
-    listings = map(lambda l: serialize_listing(l) + "\n", listings)
+    _reset_db()
 
-    with open("listings.txt", "w") as f:
-        f.writelines(listings)
+    db = sqlite3.connect(database_file)
+    cursor = db.cursor()
+
+    query = "INSERT INTO listings (game, email, price) VALUES (?, ?, ?)"
+
+    for listing in listings:
+        cursor.execute(query, (listing["game"], listing["email"], listing["price"]))
+
+    db.commit()
+    db.close()
+
+
+def _reset_db():
+    db = sqlite3.connect(database_file)
+    cursor = db.cursor()
+
+    query = "DROP TABLE IF EXISTS listings;"
+
+    cursor.execute(query)
+
+    query = """
+        CREATE TABLE IF NOT EXISTS listings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            game TEXT NOT NULL,
+            email TEXT NOT NULL,
+            price REAL NOT NULL
+        )
+    """
+
+    cursor.execute(query)
+
+    db.commit()
+    db.close()
+
+
+if __name__ == "__main__":
+    _reset_db()
